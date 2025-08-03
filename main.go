@@ -1,9 +1,9 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
+	"mc-query/mcproto/json"
 	"mc-query/mcproto/packets"
 	"net"
 	"os"
@@ -86,19 +86,13 @@ func main() {
 
 	log.Printf("Response %d (err=%v): %s\n", numRead, err, statusResp.JsonResponse.Str)
 
-	var jsonParsed map[string]any
-	err = json.Unmarshal([]byte(statusResp.JsonResponse.Str), &jsonParsed)
+	status, err := json.DeserializeStatus(statusResp.JsonResponse.Str)
 
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Error parsing json: ", statusResp.JsonResponse.Str)
 	}
 
-	players, e := jsonParsed["players"].(map[string]any)
-	if !e {
-		log.Fatalf("Invalid response! (%v)", jsonParsed)
-	}
-
-	fmt.Println("Players online: ", players["online"])
+	fmt.Println("Online players: ", status.Players.Online)
 }
 
 func printUsage() {
