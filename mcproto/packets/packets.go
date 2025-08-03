@@ -9,13 +9,6 @@ import (
 func sendPacket(conn net.Conn, packetID fields.VarInt, field ...fields.Field) error {
 	data, err := serializePacket(packetID, field...)
 
-	// log.Printf("Writing data:")
-	// fmt.Fprint(os.Stderr, "\t[ ")
-	// for _, d := range data {
-	// 	fmt.Fprintf(os.Stderr, "0x%02x ", d)
-	// }
-	// fmt.Fprintln(os.Stderr, "]")
-
 	if err != nil {
 		return err
 	}
@@ -33,7 +26,7 @@ func sendPacket(conn net.Conn, packetID fields.VarInt, field ...fields.Field) er
 }
 
 func receiveKnownPacket(conn net.Conn, packetID fields.VarInt, field ...fields.Field) (readBytes uint, err error) {
-	data := make([]byte, 30000)
+	data := make([]byte, 32767+100) // Max json data size for status packet + some padding
 
 	numBytesRecv, err := conn.Read(data)
 
