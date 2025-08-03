@@ -1,2 +1,5 @@
 # Proprietary (?) Minecraft server generated files
 generated/
+
+# Executable
+mc-query
