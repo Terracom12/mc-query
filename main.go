@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/fatih/color"
 	"log"
 	"mc-query/mcproto/json"
 	"mc-query/mcproto/packets"
@@ -79,20 +80,71 @@ func main() {
 	err = statusReq.Send(conn)
 	log.Printf("Sending StatusRequest packet... (err=%v)\n", err)
 
-	log.Printf("Receiving a StatusResponse packet... (err=%v)\n", err)
-
 	statusResp := packets.StatusResponse{}
 	numRead, err := statusResp.Receive(conn)
+
+	log.Printf("Receiving a StatusResponse packet... (err=%v)\n", err)
 
 	log.Printf("Response %d (err=%v): %s\n", numRead, err, statusResp.JsonResponse.Str)
 
 	status, err := json.DeserializeStatus(statusResp.JsonResponse.Str)
 
 	if err != nil {
-		log.Fatal("Error parsing json: ", statusResp.JsonResponse.Str)
+		log.Fatal("Error parsing json: ", statusResp.JsonResponse.Str, err)
 	}
 
-	fmt.Println("Online players: ", status.Players.Online)
+	printPlayersOnline(status)
+}
+
+func printPlayersOnline(status json.Status) {
+	underline := color.New(color.Underline).SprintFunc()
+	red := color.New(color.FgRed).SprintFunc()
+	green := color.New(color.FgGreen).SprintFunc()
+	blue := color.New(color.FgBlue).SprintFunc()
+
+	playerSampleString := "["
+	first := true
+	for _, player := range status.Players.Sample {
+		if !first {
+			playerSampleString += ", "
+		}
+		first = false
+		playerSampleString += blue(player.Name)
+	}
+	playerSampleString += "]"
+
+	fmt.Print(underline("Server Info:"))
+	switch d := status.Description.(type) {
+	case string:
+		fmt.Printf("\nDescription:        \"%s\"", red(d))
+	case map[string]any:
+		var (
+			textVar any
+			exists  bool
+			text    string
+			valid   bool
+		)
+		textVar, exists = d["text"]
+		if !exists {
+			goto unknown
+		}
+		text, valid = textVar.(string)
+		if !valid {
+			goto unknown
+		}
+
+		fmt.Printf("\nDescription:        \"%s\"", red(text))
+		break
+
+	unknown:
+		fmt.Printf("\nDescription:        %s", red("<unknown>"))
+	}
+
+	fmt.Printf(`
+Max Player Count:   %s
+Online Players:     %s
+        Sample:     %s
+`, green(status.Players.Max), green(status.Players.Online), playerSampleString)
 }
 
 func printUsage() {
